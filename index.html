@@ -1,0 +1,245 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <title>Webhook Spammer</title>
+    <link rel="icon" href="webhookspammer.png">
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 0;
+            background-color: #f4f4f9;
+        }
+
+        .container {
+            max-width: 600px;
+            margin: 50px auto;
+            background: #ffffff;
+            border-radius: 8px;
+            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
+            padding: 20px;
+            text-align: center;
+        }
+
+        h1 {
+            font-size: 50px;
+            margin-bottom: 20px;
+            color: #000000;
+        }
+
+        .input-group {
+            margin-bottom: 15px;
+            text-align: left;
+        }
+
+        .input-group label {
+            display: block;
+            font-size: 14px;
+            margin-bottom: 5px;
+            color: #555;
+        }
+
+        .input-group input[type="text"],
+        .input-group input[type="color"],
+        .input-group textarea {
+            width: 100%;
+            padding: 10px;
+            font-size: 14px;
+            border: 1px solid #ccc;
+            border-radius: 5px;
+            box-sizing: border-box;
+            margin-bottom: 20px;
+        }
+
+        .input-group textarea {
+            resize: none;
+        }
+
+        .hidden {
+            display: none;
+        }
+
+        #embed {
+            margin-top: 15px;
+            border: 1px solid #ffffff;
+            padding: 15px;
+            border-radius: 8px;
+            background-color: #f9f9f9;
+        }
+
+        .button-group {
+            margin-top: 20px;
+        }
+
+        button {
+            padding: 10px 20px;
+            font-size: 14px;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            transition: background-color 0.3s ease;
+        }
+
+        button#spam-btn {
+            background-color: #ffffff;
+            color: rgb(0, 0, 0);
+            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
+            border-radius: 20px;
+        }
+
+        #response {
+            margin-top: 20px;
+            padding: 15px;
+            background-color: #f1f1f1;
+            border-radius: 5px;
+            font-size: 14px;
+            text-align: left;
+        }
+
+        .confirmation h3 {
+            color: #28a745;
+            font-size: 18px;
+            margin-bottom: 5px;
+        }
+
+        .confirmation h3.error {
+            color: #dc3545;
+        }
+
+        .confirmation p {
+            font-size: 14px;
+            margin: 0;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Webhook Spammer</h1>
+        <form class="hook-form">
+            <div class="input-group">
+                <label for="webhook-url">Webhook URL:</label>
+                <textarea id="webhook-url" name="webhook_url" rows="2" placeholder="Enter Webhook URL" required></textarea>
+            </div>
+            <div class="input-group">
+                <label for="username">Username:</label>
+                <textarea id="username" name="username" rows="1" placeholder="Enter username" required></textarea>
+            </div>
+            <div class="input-group">
+                <label for="avatar">Avatar URL:</label>
+                <textarea id="avatar" name="avatar" rows="2" placeholder="Enter avatar URL (optional)"></textarea>
+            </div>
+            <div class="input-group">
+                <label for="content">Message Content:</label>
+                <textarea id="content" name="content" rows="3" placeholder="Enter your message" required></textarea>
+            </div>
+            <div class="input-group">
+                <label for="embed-toggle">Add Embed:</label>
+                <input type="checkbox" id="embed-toggle" class="addEmbed">
+            </div>
+            <div class="input-group embed hidden" id="embed">
+                <label for="embed-title">Embed Title:</label>
+                <textarea id="embed-title" name="title" rows="2" placeholder="Embed Title"></textarea>
+                <label for="embed-description">Embed Description:</label>
+                <textarea id="embed-description" name="description" rows="3" placeholder="Embed Description"></textarea>
+                <label for="embed-color" style="margin: auto;">Embed Color:</label>
+                <input type="color" id="embed-color" name="color" value="#ffffff" style="width: 50px; height: 50px; border: none; padding: 0; cursor: pointer; box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1); margin: auto;">
+                <label for="embed-url">Embed URL:</label>
+                <textarea id="embed-url" name="url" rows="2" placeholder="Embed URL (optional)"></textarea>
+                <label for="embed-footer">Embed Footer:</label>
+                <textarea id="embed-footer" name="footer" rows="2" placeholder="Footer text"></textarea>
+                <label for="embed-footer-icon">Footer Icon URL:</label>
+                <textarea id="embed-footer-icon" name="footer_icon" rows="2" placeholder="Footer Icon URL (optional)"></textarea>
+            </div>
+            <div class="button-group">
+                <button type="submit" id="spam-btn">Spam</button>
+            </div>
+        </form>
+        <div id="response">Responses will appear here...</div>
+        <div class="confirmation"></div>
+    </div>
+    <script>
+        let isSpamming = false;
+let spamInterval;
+const form = document.querySelector('.hook-form');
+const textArea = document.querySelector('#response');
+const embedToggle = document.querySelector('#embed-toggle');
+const embed = document.querySelector('.embed');
+const confirmation = document.querySelector('.confirmation');
+
+embedToggle.addEventListener('change', () => {
+    embed.classList.toggle('hidden', !embedToggle.checked);
+});
+
+function startSpamming(API_URL, requestBody, interval) {
+    isSpamming = true;
+    spamInterval = setInterval(() => {
+        if (!isSpamming) {
+            clearInterval(spamInterval);
+            return;
+        }
+
+        console.log("Spamming..."); 
+        fetch(API_URL, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(requestBody),
+        })
+        .then(response => {
+            if (response.ok) {
+                console.log("Message sent successfully");
+            } else if (response.status === 429) {
+                response.json().then(data => {
+                    const retryAfter = data.retry_after * 1000; 
+                    console.log(`Rate limited! Retrying after ${retryAfter}ms`);
+                    clearInterval(spamInterval);
+
+
+                    setTimeout(() => startSpamming(API_URL, requestBody, interval), retryAfter);
+                });
+            } else {
+                console.error(`Failed with status ${response.status}`);
+            }
+        })
+        .catch((error) => {
+            console.error("Error during spamming:", error);
+        });
+    }, interval); 
+}
+
+form.addEventListener('submit', (event) => {
+    event.preventDefault();
+    const formData = new FormData(form);
+    const API_URL = formData.get('webhook_url');
+    const username = formData.get('username');
+    const avatar_url = formData.get('avatar');
+    const content = formData.get('content');
+    const embeds = embedToggle.checked ? [{
+        title: formData.get('title'),
+        description: formData.get('description'),
+        color: parseInt(formData.get('color').substring(1), 16),
+        url: formData.get('url'),
+        footer: {
+            text: formData.get('footer'),
+            icon_url: formData.get('footer_icon'),
+        },
+    }] : [];
+    const requestBody = { username, avatar_url, content, embeds };
+
+    if (!API_URL || !content || !username) {
+        alert("Please fill in the required fields (Webhook URL, Username, and Message Content)");
+        return;
+    }
+
+    startSpamming(API_URL, requestBody, 500); 
+});
+
+window.addEventListener('beforeunload', () => {
+    isSpamming = false;
+    clearInterval(spamInterval);
+});
+
+    </script>
+</body>
+</html>
